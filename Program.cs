@@ -16,7 +16,7 @@ namespace ZipCodeGrab
         static void Main(string[] args)
         {
             Console.WriteLine("Starting...");
-
+           
             Guantlet();
         }
 
@@ -24,6 +24,9 @@ namespace ZipCodeGrab
         {
             ArrayList InputArrList = new ArrayList();
             ArrayList OutputArrList = new ArrayList();
+            string[] myTypeArr = {"postal_code",  "country", "locality", "administrative_area_level_1", 
+                                        "administrative_area_level_2", "sublocality_level_1" };
+            OutputArrList.Add(myTypeArr);
             InputArrList = ImportExportCSV.grabCsvData("C:\\users\\fargusonm\\desktop\\MyData.txt", "Test", '|');
             string myUrl = @"http://maps.googleapis.com/maps/api/geocode/json?address=";
             string myUrlSensor = "&sensor=true";
@@ -34,111 +37,140 @@ namespace ZipCodeGrab
                 object currentLine = InputArrList[i];
                 string[] InputArr = currentLine as string[];
                 string zip = InputArr[0];
+                string country = InputArr[1];
                 string myFullUrl = myUrl + zip + myUrlSensor;
-                JSonDataParse jsdp = new JSonDataParse(myFullUrl, "address_components", "long_name");
-                OutputArrList.Add(jsdp.ReturnData);
+                JSonDataParse jsdp = new JSonDataParse(myFullUrl, country, "address_components", "long_name");
+                if (jsdp.DataOK)
+                {
+                    OutputArrList.Add(jsdp.ReturnData);
+                    Console.Write("\r{0}  -count    ", i.ToString());
+                }
+                
+                i++;
             }
+            ImportExportCSV.outputResults(OutputArrList, "C:\\users\\fargusonm\\desktop\\MattsTest.txt"); 
             Console.WriteLine();
 
         }
-        private static void outputResults(ArrayList results, string filePath)
+        
+
+
+    public class JSonDataParse
+    {
+
+        private string country { get; set; }
+        private string cutDownJSON { get; set; }
+        private string jSonURL { get; set; }
+        private string jSonObj { get; set; }
+        private string fieldName { get; set; }
+        private string componentName { get; set; }
+        public string[] ReturnData { get; set; }
+        public bool DataOK { get; set; }
+
+        public JSonDataParse(string JSonURL, string Country, string ComponentName, string FieldName)
         {
-            Console.WriteLine("Dumping results -- here: " + filePath);
-            var csv = new StringBuilder();
-            int i = System.IO.File.Exists(filePath) ? 1 : 0;
-            while (i < results.Count)
-            {
-                object arrObj = results[i];
-                string[] myResultsArr = arrObj as string[];
+            //object_constructor
+            country = Country;
+            jSonURL = JSonURL;
+            fieldName = FieldName;
+            componentName = ComponentName;
+            cutDownJSON = "";
+            DataOK = true;
 
-                csv.Append(myResultsArr[0] + "|" + myResultsArr[1] + "|" + myResultsArr[2]
-                        + "|" + myResultsArr[3] + "|" + myResultsArr[4] + "|" + myResultsArr[5]);
-                csv.Append(Environment.NewLine);
-
-                i++;
+            getJSONData();
+            cutDownJSONData();
+            if (cutDownJSON != "") 
+            { 
+                getBlockData();
 
             }
-            File.AppendAllText(filePath, csv.ToString());
+            else
+            {
+            DataOK = false;
+            }
         }
-    }
-
-
-        public class JSonDataParse
+        private void getJSONData()
         {
-            private string cutDownJSON { get; set;}
-            private string jSonURL { get; set; }
-            private string jSonObj { get; set; }
-            private string fieldName { get; set; }
-            private string componentName { get; set; }
-            public string[] ReturnData { get; set; }
-
-            public JSonDataParse(string JSonURL, string ComponentName, string FieldName)
+            //runs first
+            string results = "";
+            try
             {
-                //object constructor
-                jSonURL = JSonURL;
-                fieldName = FieldName;
-                componentName = ComponentName;
-                getJSONData();
-                cutDownJSONData();
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(jSonURL);
+                HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+                StreamReader sr = new StreamReader(resp.GetResponseStream());
+                results = sr.ReadToEnd();
+                sr.Close();
+                resp.Close();
             }
-            private void getJSONData()
+            catch (Exception x)
             {
-                //runs first
-                string results = "";
+                results = x.Message;
+            }
+            jSonObj = results;
+        }
+
+        private void cutDownJSONData()
+        { //runs second
+
+            int i = 1;
+            int jcCutDownStart = 1;
+            while (jcCutDownStart > 0)
+            {
                 try
                 {
-                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(jSonURL);
-                    HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
-                    StreamReader sr = new StreamReader(resp.GetResponseStream());
-                    results = sr.ReadToEnd();
-                    sr.Close();
-                    resp.Close();
-                }
-                catch (Exception x)
-                {
-                    results = x.Message;
-                }
-                jSonObj = results;
-            }
+                    jcCutDownStart = StringUtils.Search(jSonObj, componentName, i);
+                    string CutDownJSON = jSonObj.Substring(jcCutDownStart,
+                                                           StringUtils.Search(jSonObj, "],") - jcCutDownStart);
 
-            private void cutDownJSONData()
-            { //runs second
-                int jcCutDownStart = StringUtils.Search(jSonObj, componentName);
-                string CutDownJSON = jSonObj.Substring(jcCutDownStart,
-                                                       StringUtils.Search(jSonObj, "],") - jcCutDownStart);
-                cutDownJSON = CutDownJSON;
-            }
-
-            private void jsonReturnArr()
-            {
-                //runs third
-                int arrSize = StringUtils.countString(cutDownJSON, fieldName);
-                string[] myString = new string[arrSize];
-                int startPoint = 1;
-                int inst = 1;
-
-                while (arrSize >= inst)
-                {
-                    int ind = inst - 1;
-                    startPoint = StringUtils.Search(cutDownJSON, fieldName, inst) + fieldName.Length + 4;
-                    int endPoint = StringUtils.Search(cutDownJSON.Substring(startPoint), ",") - 2;
-                    string jSonString = cutDownJSON.Substring(startPoint, endPoint);
-                    if (startPoint != 0)
+                    bool CountryInBlock = StringUtils.countString(CutDownJSON, country) > 0;
+                    if (CountryInBlock)
                     {
-                        myString[ind] = jSonString;
-                    }
-                    else
-                    {
+                        cutDownJSON = CutDownJSON;
                         break;
                     }
 
-                    inst++;
+                    i++;
                 }
-                ReturnData = myString;
+                catch 
+                {
+                    break;
+                }
             }
-
         }
 
+        private void getBlockData()
+        {
+            string newBlock = cutDownJSON;
+            string[] outArr = { "", "", "", "", "", "" };
+            string[] myTypeArr = {"postal_code",  "country", "locality", "administrative_area_level_1", 
+                                        "administrative_area_level_2", "sublocality_level_1" };
+            int inst = 1;
+            int startPoint = 1;
+            int stopPoint = 1;
+            while (startPoint > 0)
+            {
+                startPoint = StringUtils.Search(newBlock, "{", inst);
+                stopPoint = StringUtils.Search(newBlock, "}", inst);
+                string tempBlock = newBlock.Substring(startPoint, stopPoint - startPoint);
+                int i = 0;
+                while (i < myTypeArr.Length)
+                {
+                    if (StringUtils.countString(tempBlock, myTypeArr[i]) > 0)
+                    {
+                        int startPointGranular = StringUtils.Search(tempBlock, fieldName) + fieldName.Length + 4;
+                        int endPointGranular = StringUtils.Search(tempBlock.Substring(startPointGranular), ",") - 2;
+                        outArr[i] =  tempBlock.Substring(startPointGranular, endPointGranular);
+                        break;
+                    }
+                        
+                        i++;
+                }
+                inst++;
+            }
+            ReturnData = outArr;
+
+        }
+    }
         public static class ImportExportCSV
         {
 
@@ -174,6 +206,27 @@ namespace ZipCodeGrab
                 sr.Dispose();
                 return myList;
             }
+
+            public static void outputResults(ArrayList results, string filePath)
+            {
+                Console.WriteLine("Dumping results -- here: " + filePath);
+                var csv = new StringBuilder();
+                int i = System.IO.File.Exists(filePath) ? 1 : 0;
+                while (i < results.Count)
+                {
+                    object arrObj = results[i];
+                    string[] myResultsArr = arrObj as string[];
+
+                    csv.Append(myResultsArr[0] + "|" + myResultsArr[1] + "|" + myResultsArr[2]
+                            + "|" + myResultsArr[3] + "|" + myResultsArr[4] + "|" + myResultsArr[5]);
+                    csv.Append(Environment.NewLine);
+
+                    i++;
+
+                }
+                File.AppendAllText(filePath, csv.ToString());
+            }
+        }
         }
 
         public static class StringUtils
@@ -238,6 +291,6 @@ namespace ZipCodeGrab
                 }
                 return cnt;
             }
-        }
-    }
+        }    
+}
 
