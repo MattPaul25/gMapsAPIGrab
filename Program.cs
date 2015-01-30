@@ -16,7 +16,6 @@ namespace ZipCodeGrab
         static void Main(string[] args)
         {
             Console.WriteLine("Starting...");
-           
             Guantlet();
         }
 
@@ -52,9 +51,6 @@ namespace ZipCodeGrab
             Console.WriteLine();
 
         }
-        
-
-
     public class JSonDataParse
     {
 
