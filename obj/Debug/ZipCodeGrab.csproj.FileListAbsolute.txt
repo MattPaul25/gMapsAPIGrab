@@ -4,3 +4,9 @@ c:\users\fargusonm\documents\visual studio 2013\Projects\ZipCodeGrab\ZipCodeGrab
 c:\users\fargusonm\documents\visual studio 2013\Projects\ZipCodeGrab\ZipCodeGrab\obj\Debug\ZipCodeGrab.csprojResolveAssemblyReference.cache
 c:\users\fargusonm\documents\visual studio 2013\Projects\ZipCodeGrab\ZipCodeGrab\obj\Debug\ZipCodeGrab.exe
 c:\users\fargusonm\documents\visual studio 2013\Projects\ZipCodeGrab\ZipCodeGrab\obj\Debug\ZipCodeGrab.pdb
+C:\Users\fargusonm\Documents\visual studio 2013\Projects\ZipCodeGrab\bin\Debug\ZipCodeGrab.exe.config
+C:\Users\fargusonm\Documents\visual studio 2013\Projects\ZipCodeGrab\obj\Debug\ZipCodeGrab.exe
+C:\Users\fargusonm\Documents\visual studio 2013\Projects\ZipCodeGrab\obj\Debug\ZipCodeGrab.pdb
+C:\Users\fargusonm\Documents\visual studio 2013\Projects\ZipCodeGrab\bin\Debug\ZipCodeGrab.exe
+C:\Users\fargusonm\Documents\visual studio 2013\Projects\ZipCodeGrab\bin\Debug\ZipCodeGrab.pdb
+C:\Users\fargusonm\Documents\visual studio 2013\Projects\ZipCodeGrab\obj\Debug\ZipCodeGrab.csprojResolveAssemblyReference.cache
