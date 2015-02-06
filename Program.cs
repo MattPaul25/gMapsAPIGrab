@@ -22,11 +22,11 @@ namespace ZipCodeGrab
         private static void Guantlet()
         {
             ArrayList InputArrList = new ArrayList();
-            ArrayList OutputArrList = new ArrayList();
+            List<string> OutputList = new List<string>();
             string[] myTypeArr = {"postal_code",  "country", "locality", "administrative_area_level_1", 
                                         "administrative_area_level_2", "sublocality_level_1" };
-            OutputArrList.Add(myTypeArr);
-            InputArrList = ImportExportCSV.grabCsvData("C:\\users\\fargusonm\\desktop\\MyData.txt", "Test", '|');
+            OutputList.add(myTypeArr);
+            InputArrList = ImportExportCSV.grabCsvData("C:\\users\\fargusonm\\desktop\\Matt.txt", "Test", '|');
             string myUrl = @"http://maps.googleapis.com/maps/api/geocode/json?address=";
             string myUrlSensor = "&sensor=true";
             int myCount = InputArrList.Count;
@@ -36,11 +36,12 @@ namespace ZipCodeGrab
                 object currentLine = InputArrList[i];
                 string[] InputArr = currentLine as string[];
                 string zip = InputArr[0];
-                string country = InputArr[1];
+                string country = InputArr[0];
                 string myFullUrl = myUrl + zip + myUrlSensor;
                 JSonDataParse jsdp = new JSonDataParse(myFullUrl, country, "address_components", "long_name");
                 if (jsdp.DataOK)
                 {
+                    
                     OutputArrList.Add(jsdp.ReturnData);
                     Console.Write("\r{0}  -count    ", i.ToString());
                 }
@@ -60,7 +61,7 @@ namespace ZipCodeGrab
         private string jSonObj { get; set; }
         private string fieldName { get; set; }
         private string componentName { get; set; }
-        public string[] ReturnData { get; set; }
+        List<string> ReturnData { get; set; }
         public bool DataOK { get; set; }
 
         public JSonDataParse(string JSonURL, string Country, string ComponentName, string FieldName)
@@ -72,18 +73,31 @@ namespace ZipCodeGrab
             componentName = ComponentName;
             cutDownJSON = "";
             DataOK = true;
+            JsonClean();
+        }
 
+        private void JsonClean()
+        {
             getJSONData();
-            cutDownJSONData();
-            if (cutDownJSON != "") 
-            { 
+            cleanJSONdata("\"results\" : [");
+            cutDownJSONData(); //updates member that cutdownjson
+            jSonObj = jSonObj.Substring(cutDownJSON.Length, jSonObj.Length - cutDownJSON.Length);
+            if (cutDownJSON != "")
+            {
                 getBlockData();
-
             }
             else
             {
-            DataOK = false;
+                DataOK = false;
             }
+        }
+
+        private void cleanJSONdata(string StartString)
+        {
+            //chops off the first portion of Json for further cleaning after start string
+            int myStartPoint = StringUtils.Search(jSonObj, StartString);
+            jSonObj = jSonObj.Substring(myStartPoint + StartString.Length);
+
         }
         private void getJSONData()
         {
@@ -118,7 +132,7 @@ namespace ZipCodeGrab
                     string CutDownJSON = jSonObj.Substring(jcCutDownStart,
                                                            StringUtils.Search(jSonObj, "],") - jcCutDownStart);
 
-                    bool CountryInBlock = StringUtils.countString(CutDownJSON, country) > 0;
+                    bool CountryInBlock = StringUtils.CountString(CutDownJSON, country) > 0;
                     if (CountryInBlock)
                     {
                         cutDownJSON = CutDownJSON;
@@ -151,7 +165,7 @@ namespace ZipCodeGrab
                 int i = 0;
                 while (i < myTypeArr.Length)
                 {
-                    if (StringUtils.countString(tempBlock, myTypeArr[i]) > 0)
+                    if (StringUtils.CountString(tempBlock, myTypeArr[i]) > 0)
                     {
                         int startPointGranular = StringUtils.Search(tempBlock, fieldName) + fieldName.Length + 4;
                         int endPointGranular = StringUtils.Search(tempBlock.Substring(startPointGranular), ",") - 2;
@@ -163,7 +177,7 @@ namespace ZipCodeGrab
                 }
                 inst++;
             }
-            ReturnData = outArr;
+            ReturnData.AddRange(outArr);
 
         }
     }
@@ -172,6 +186,7 @@ namespace ZipCodeGrab
 
             public static ArrayList grabCsvData(string fileName, string tableName, char splitChar)
             {
+                /*pulls data from from file name and converts into an array list for future loops*/
                 StreamReader sr = new StreamReader(fileName);
                 string x = sr.ReadLine();
                 ArrayList myList = new ArrayList();
@@ -205,6 +220,7 @@ namespace ZipCodeGrab
 
             public static void outputResults(ArrayList results, string filePath)
             {
+                /*dump results in a new csv file split by | symbol*/
                 Console.WriteLine("Dumping results -- here: " + filePath);
                 var csv = new StringBuilder();
                 int i = System.IO.File.Exists(filePath) ? 1 : 0;
@@ -267,26 +283,14 @@ namespace ZipCodeGrab
                     return 0;
                 }
             }
-            public static int countString(string yourString, string yourMarker)
+            public static int CountString(string yourString, string yourMarker)
             {
-                int cnt = 0;
-                int mLen = yourMarker.Length;
-                for (int i = 1; i <= yourString.Length; i++)
-                {
-                    try
-                    {
-                        if (yourString.Substring(i, mLen) == yourMarker)
-                        {
-                            cnt++;
-                        }
-                    }
-                    catch
-                    {
-                        break;
-                    }
-                }
-                return cnt;
-            }
+                //counts the number of strings that exist in another string
+                int myCnt = 0;
+                string newstring = yourString.Replace(yourMarker, "");
+                myCnt = (yourString.Length - newstring.Length) / yourMarker.Length;
+                return myCnt;
+            }       
         }    
 }
 
